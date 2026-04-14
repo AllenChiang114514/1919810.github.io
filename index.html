@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>終極抽生死系統</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: black;
+    color: white;
+    display: flex;
+}
+#main { flex: 2; text-align: center; padding-top: 30px; }
+#side { flex: 1; border-left: 2px solid #333; padding: 10px; display: flex; }
+.column { flex: 1; padding: 10px; }
+.alive-title { color: #00ff88; }
+.dead-title { color: #ff3b3b; }
+.log-item { margin: 6px 0; font-size: 18px; }
+.alive { color: #00ff88; }
+.dead { color: #ff3b3b; }
+h2 { color: #ff2e63; }
+textarea { width: 300px; height: 100px; background: #111; color: white; border:1px solid #555;}
+button { margin: 6px; padding: 10px; background: #ff2e63; color: white; border: none; cursor: pointer; transition: all 0.1s; }
+button:active { transform: scale(0.95) rotate(-2deg); }
+.result { font-size: 50px; margin-top: 20px; height: 80px; }
+.feedback { font-size: 18px; margin-top: 10px; color: #ffff33; height: 24px; }
+.fade-in { animation: fadeIn 2s forwards; }
+@keyframes fadeIn { 0% { opacity: 0; letter-spacing: 20px; } 100% { opacity: 1; } }
+.red-flash { animation: redFlash 0.2s 3; }
+@keyframes redFlash { 50% { background: darkred; } }
+.shake { animation: shake 0.4s; }
+@keyframes shake { 25% { transform: translate(6px,-6px); } 50% { transform: translate(-6px,6px); } }
+.big .log-item { font-size: 28px; }
+</style>
+</head>
+<body>
+
+<div id="main">
+    <h2>終極審判系統</h2>
+    <textarea id="names" placeholder="每行一個名字"></textarea><br>
+
+    <button onclick="clickFeedback('載入名單',initList)">載入名單</button>
+    <button onclick="clickFeedback('抽名字',drawName)">抽名字</button>
+    <button onclick="clickFeedback('審判',judge)">審判</button>
+    <button onclick="clickFeedback('全螢幕',fullscreen)">全螢幕</button>
+
+    <div class="result" id="display"></div>
+    <div class="feedback" id="feedback"></div>
+</div>
+
+<div id="side">
+    <div class="column">
+        <h3 class="alive-title">🟢 生存</h3>
+        <div id="aliveList"></div>
+    </div>
+    <div class="column">
+        <h3 class="dead-title">🔴 死亡</h3>
+        <div id="deadList"></div>
+    </div>
+</div>
+
+<audio id="tick" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<audio id="boom" src="https://www.soundjay.com/explosion/explosion-01.wav"></audio>
+
+<script>
+let list = [], current="";
+
+// 👉 按鈕動畫 + 文字提示
+function clickFeedback(name, func){
+    const btnText = document.getElementById("feedback");
+    btnText.innerText = `已按下「${name}」`;
+    btnText.classList.add("fade-in");
+    setTimeout(()=>btnText.innerText="",800);
+    func();
+}
+
+function initList(){
+    const input = document.getElementById("names").value;
+    list = input.split("\n").map(n=>n.trim()).filter(n=>n);
+    document.getElementById("display").innerText="";
+    document.getElementById("display").className="result";
+    document.getElementById("aliveList").innerHTML="";
+    document.getElementById("deadList").innerHTML="";
+}
+
+function drawName(){
+    if(list.length===0) return;
+    const d=document.getElementById("display");
+    let i=setInterval(()=>{
+        d.className="result";
+        d.innerText=list[Math.floor(Math.random()*list.length)];
+        document.getElementById("tick").play();
+    },100);
+    setTimeout(()=>{
+        clearInterval(i);
+        current=list.splice(Math.floor(Math.random()*list.length),1)[0];
+        d.className="result fade-in";
+        d.innerText=current;
+    },2000);
+}
+
+function judge(){
+    if(!current) return;
+    const d=document.getElementById("display");
+    let count=3;
+    function countdown(){
+        if(count>0){
+            d.className="result";
+            d.innerText=count;
+            count--;
+            setTimeout(countdown,1000);
+        } else reveal();
+    }
+    function reveal(){
+        let alive = Math.random()<0.5;
+        if(alive){
+            d.innerText=current+" → 生";
+            d.className="result alive";
+            addAlive(current);
+        } else{
+            d.innerText=current+" → 死";
+            d.className="result dead";
+            addDead(current);
+            document.body.classList.add("red-flash","shake");
+            document.getElementById("boom").play();
+            setTimeout(()=>document.body.classList.remove("red-flash","shake"),600);
+        }
+        current="";
+        if(list.length===0) showFinal();
+    }
+    countdown();
+}
+
+// 分類加入
+function addAlive(name){
+    const div=document.createElement("div");
+    div.className="log-item alive";
+    div.innerText=name;
+    document.getElementById("aliveList").prepend(div);
+}
+function addDead(name){
+    const div=document.createElement("div");
+    div.className="log-item dead";
+    div.innerText=name;
+    document.getElementById("deadList").prepend(div);
+}
+
+function showFinal(){ document.getElementById("side").classList.add("big"); }
+function fullscreen(){
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+}
+</script>
+</body>
+</html>
